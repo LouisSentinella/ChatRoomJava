@@ -108,8 +108,11 @@ public class EchoClient {
 		}
 	}
 	
-	public static void main(String[] args) {
-		EchoClient myEchoClient = new EchoClient("redacted");
+	public static void main(String[] args) throws IOException {
+		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+		System.out.println("What IP would you like to connect to?");
+		String address = br.readLine();
+		EchoClient myEchoClient = new EchoClient(address);
 		myEchoClient.go();
 	}
 }
