@@ -1,4 +1,4 @@
-package Client;
+package Server;
 
 import Server.EchoServer;
 
@@ -14,9 +14,11 @@ public class ConnectionHandler implements Runnable{
     private InputStreamReader clientCharStream;
     private BufferedReader clientIn;
     public PrintWriter clientOut;
+    private User user;
 
-    public ConnectionHandler(Socket clientSocketInput) {
+    public ConnectionHandler(Socket clientSocketInput, User user) {
 
+        this.user = user;
         clientSocket = clientSocketInput;
         System.out.println("Received new connection from: " + clientSocket.getInetAddress());
 
@@ -35,24 +37,25 @@ public class ConnectionHandler implements Runnable{
     @Override
     public void run() {
         try {
+            boolean first = true;
             while (true) {
                 if (this.clientIn.ready()){
                     String userInput = this.clientIn.readLine();
-                    System.out.println(userInput);
-                    for (Socket client : EchoServer.clientList){
-                        if (client.equals(this.clientSocket)){
-                            continue;
-                        } else{
-                            new PrintWriter(client.getOutputStream(), true).println(userInput);
+                    if(first) {
+                        this.user.username = userInput;
+                        first = false;
+                    } else {
+                        System.out.println(this.user.username + ": " + userInput);
+                        for (User client : EchoServer.clientList) {
+                                new PrintWriter(client.socket.getOutputStream(), true).println(this.user.username + ": " + userInput);
+                            }
                         }
                     }
                 }
 
-            }
+            } catch (IOException ioException) {
+            ioException.printStackTrace();
         }
-        catch (IOException e){
-            e.printStackTrace();
-        }
-
     }
+
 }

@@ -10,30 +10,26 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.nio.Buffer;
 
 public class EchoClient {
 
-	private Socket serverSocket;
+	private static Socket serverSocket;
+	private String address;
+	private static PrintWriter serverOut;
+	private static BufferedReader serverIn;
 	
-	public EchoClient(String address) {
-		try {
-			serverSocket = new Socket(address, 14002);
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+	public EchoClient() {
+
 	}
 	
 	public void go() {
+
 		try {
 			// Set up the ability to read user input from keyboard
 
 			// Set up the ability to send the data to the server
-			PrintWriter serverOut = new PrintWriter(serverSocket.getOutputStream(), true);
-			
-			// Set up the ability to read the data from the server
-			BufferedReader serverIn = new BufferedReader(new InputStreamReader(serverSocket.getInputStream()));
+
 
 			//new Thread(new messageInputHandler(serverOut)).start();
 
@@ -54,28 +50,45 @@ public class EchoClient {
 			JScrollPane scroll = new JScrollPane(t2, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 
 
-			final boolean[] firstTime = {true};
-			final String[] username = {null};
+			final int[] firstTime = {0};
 			t1.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
 
-					if (firstTime[0]){
-						username[0] = t1.getText();
-						t2.append(username[0] + " has joined the chat!\n");
-						System.out.println(username[0] + " has joined the chat!");
+					if (firstTime[0] == 0){
+						String userInputString = t1.getText();
+						System.out.println(userInputString);
 						t1.setText("");
-						firstTime[0] = false;
+						try {
+							EchoClient.serverSocket = new Socket(userInputString, 14002);
+							EchoClient.serverOut = new PrintWriter(EchoClient.serverSocket.getOutputStream(), true);
+
+							EchoClient.serverIn = new BufferedReader(new InputStreamReader(EchoClient.serverSocket.getInputStream()));
+						} catch (IOException error) {
+							error.printStackTrace();
+						}
+						t2.append(userInputString);
+
+						t2.append("\nWhat is your name? \n");
+						firstTime[0] = 1;
+
+					}
+					else if (firstTime[0] == 1){
+						String userInputString = t1.getText();
+						t2.append("Welcome to the chat, " + userInputString + "!\n");
+						EchoClient.serverOut.println(userInputString);
+						t1.setText("");
+						firstTime[0] = 2;
 					} else {
 						String userInputString = t1.getText();
-						t2.append(username[0] + ": " + userInputString + "\n");
-						serverOut.println(username[0] + ": " + userInputString);
+						EchoClient.serverOut.println(userInputString);
 						//scroll.getVerticalScrollBar().setValue(scroll.getVerticalScrollBar().getMaximum());
 						t1.setText("");
 					}
 				}
 			});
 
+			t2.append("What ip would you like to connect to? \n");
 			t1.setBounds(0,330, 400,70);
 			scroll.setBounds(0, 0, 400, 300);
 
@@ -88,15 +101,21 @@ public class EchoClient {
 			f.setLayout(null);
 			f.setVisible(true);
 
-			t2.append("What is your name? \n");
+
 
 
 			while(true) {
+					try {
+						String serverResponse = EchoClient.serverIn.readLine();
+						t2.append(serverResponse + "\n");
+					} catch (Exception e){
+						continue;
+					}
 
-				String serverResponse = serverIn.readLine();
-				t2.append(serverResponse + "\n");
+
+
 			}			
-		} catch (IOException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		finally {
@@ -109,10 +128,8 @@ public class EchoClient {
 	}
 	
 	public static void main(String[] args) throws IOException {
-		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-		System.out.println("What IP would you like to connect to?");
-		String address = br.readLine();
-		EchoClient myEchoClient = new EchoClient(address);
+
+		EchoClient myEchoClient = new EchoClient();
 		myEchoClient.go();
 	}
 }
